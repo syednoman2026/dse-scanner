@@ -1,0 +1,37 @@
+name: DSE Daily Accumulation Scanner
+
+on:
+  schedule:
+    - cron: '0 12 * * 0,1,2,3,4'
+  workflow_dispatch:
+
+jobs:
+  run-scanner:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: pip install requests beautifulsoup4 pandas numpy
+
+      - name: Run DSE Scanner
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scanner.py
+
+      - name: Save Historical Database to GitHub
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "DSE Bot"
+          git add *.csv
+          git commit -m "Update DSE EOD Database & Logs" || exit 0
+          git push
